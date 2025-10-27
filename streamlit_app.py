@@ -369,7 +369,7 @@ with col_side:
                         color: white; 
                         font-weight: 600; 
                         margin-bottom: 1.5rem;'>
-                Inclusion Criteria
+                Should we include it?
             </div>
         </div>
         """,
