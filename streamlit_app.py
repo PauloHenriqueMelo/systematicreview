@@ -10,7 +10,7 @@ from datetime import datetime
 # PAGE CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
-    page_title="Minerva Reviewer (Blinded Validation)",
+    page_title="Minerva Reviewer — Blinded Validation",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -22,6 +22,15 @@ st.set_page_config(
 GAS_URL = "https://script.google.com/macros/s/AKfycbwQ-XHCjJd2s6sENQJh6Z9Qm-8De9J8_UThZ-pM1rGgm04FCT-qPBSyBFaqOoSreZ1-/exec"
 GAS_TOKEN = "MINERVA_SECRET"
 PROMPTS_FILE = "prompts.csv"
+
+# SR → TITLE MAP
+SR_TITLES = {
+    1: "Eve Pathology",
+    2: "Carmel EHR",
+    3: "Lauren Imaging",
+    4: "Alex Surgical AI",
+    5: "Paulo Registry"
+}
 
 # -------------------------------------------------------------------
 # LOAD PROMPTS
@@ -40,7 +49,7 @@ def load_prompts() -> dict:
     return {int(r.SR): str(r.Prompt) for r in p.itertuples(index=False)}
 
 # -------------------------------------------------------------------
-# FETCH SHEET FROM GAS
+# FETCH SHEET
 # -------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def fetch_sheet(only_unreviewed=False) -> pd.DataFrame:
@@ -64,7 +73,7 @@ def fetch_sheet(only_unreviewed=False) -> pd.DataFrame:
     return df.sort_values("_row").reset_index(drop=True)
 
 # -------------------------------------------------------------------
-# SAVE ROW
+# SAVE
 # -------------------------------------------------------------------
 def save_row(sheet_row:int, fields:dict)->bool:
     try:
@@ -81,7 +90,7 @@ def save_row(sheet_row:int, fields:dict)->bool:
         return False
 
 # -------------------------------------------------------------------
-# SIDEBAR CONTROLS
+# SIDEBAR
 # -------------------------------------------------------------------
 st.sidebar.title("⚙️ Controls")
 only_unreviewed = st.sidebar.checkbox("Only unreviewed", value=False)
@@ -118,20 +127,21 @@ title = str(row["Title"])
 abstract = str(row["Abstract"])
 sr_val = int(row["SR"]) if pd.notna(row["SR"]) else 0
 sr_prompt = prompts_map.get(sr_val, "")
-decision_val = str(row["Poenaru_Decision"]).strip()
+sr_label = SR_TITLES.get(sr_val, f"SR {sr_val}")
 
+decision_val = str(row["Poenaru_Decision"]).strip()
 ai_val = str(row["AI"]).strip().lower()
 ai_just = str(row["AI_Justification"]) if pd.notna(row["AI_Justification"]) else ""
 
 # -------------------------------------------------------------------
-# COLOR THEME LOGIC
+# BACKGROUND COLOR BASED ON AI
 # -------------------------------------------------------------------
 if ai_val in ["1", "yes"]:
     bg_color = "#002b00"  # dark green
 elif ai_val in ["0", "no"]:
     bg_color = "#330000"  # dark red
 else:
-    bg_color = "#0e1117"  # default dark
+    bg_color = "#0e1117"  # neutral
 
 st.markdown(
     f"""
@@ -145,22 +155,29 @@ st.markdown(
 )
 
 # -------------------------------------------------------------------
-# HEADER + STUDY DISPLAY
+# HEADER
 # -------------------------------------------------------------------
-st.title("🧠 Minerva Reviewer — Blinded Validation")
+st.markdown(
+    f"<h1 style='text-align:center; font-size:2.4rem;'>🧠 Minerva Reviewer — Blinded Validation</h1>",
+    unsafe_allow_html=True
+)
 st.caption(f"Row {sheet_row_num} | Progress: {st.session_state.pos + 1}/{total}")
 
+# -------------------------------------------------------------------
+# MAIN CONTENT
+# -------------------------------------------------------------------
 col_main, col_side = st.columns([2.5, 1])
 
 with col_main:
-    st.markdown(f"### 📄 Title")
+    st.markdown("### 📄 Title")
     st.markdown(f"**{title or '_(empty)_'}**")
 
     with st.expander("Abstract", expanded=True):
         st.markdown(abstract or "_(empty)_", unsafe_allow_html=True)
 
-    with st.expander(f"SR Prompt (SR={sr_val})", expanded=False):
-        st.info(sr_prompt or "_(no prompt found in prompts.csv)_")
+    # SR PROMPT SECTION WITH TITLE (E.g. Eve Pathology)
+    st.markdown(f"### 🧬 {sr_label}")
+    st.info(sr_prompt or "_(no prompt found in prompts.csv)_")
 
 # -------------------------------------------------------------------
 # REVIEW PANEL
@@ -174,25 +191,23 @@ with col_side:
         index=dec_opts.index(decision_val) if decision_val in dec_opts else 0
     )
 
-    save_col = st.container()
-    with save_col:
-        if st.button("💾 Save Decision", type="primary", use_container_width=True):
-            if not decision:
-                st.warning("Please select Yes or No.")
+    if st.button("💾 Save Decision", type="primary", use_container_width=True):
+        if not decision:
+            st.warning("Please select Yes or No.")
+        else:
+            payload = {
+                "Poenaru_Decision": decision,
+                "Reviewed_At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            ok = save_row(sheet_row_num, payload)
+            if ok:
+                st.success(f"✅ Saved decision for Row {sheet_row_num}")
+                fetch_sheet.clear()
+                st.rerun()
             else:
-                payload = {
-                    "Poenaru_Decision": decision,
-                    "Reviewed_At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-                ok = save_row(sheet_row_num, payload)
-                if ok:
-                    st.success(f"✅ Saved decision for Row {sheet_row_num}")
-                    fetch_sheet.clear()
-                    st.rerun()
-                else:
-                    st.error("❌ Save failed")
+                st.error("❌ Save failed")
 
-    # Reveal AI info *after saving*
+    # Show AI decision and justification after save
     if decision_val in ["Yes", "No"]:
         st.markdown("---")
         st.markdown("### 🤖 AI Decision (Unblinded)")
@@ -202,15 +217,14 @@ with col_side:
             st.error("AI decision: **NO (Exclude)**")
         else:
             st.info("AI decision unavailable.")
-
         if ai_just.strip():
             st.markdown(f"**Justification:**\n\n{ai_just}")
 
-        # Agreement indicator
+        # AGREEMENT
         if ai_val in ["1", "yes", "0", "no"]:
             match = (
-                (decision_val == "Yes" and ai_val in ["1", "yes"])
-                or (decision_val == "No" and ai_val in ["0", "no"])
+                (decision_val == "Yes" and ai_val in ["1", "yes"]) or
+                (decision_val == "No" and ai_val in ["0", "no"])
             )
             if match:
                 st.success("✅ You and AI agreed!")
@@ -218,7 +232,7 @@ with col_side:
                 st.error("❌ You and AI disagreed.")
 
 # -------------------------------------------------------------------
-# NAVIGATION + PROGRESS
+# NAVIGATION
 # -------------------------------------------------------------------
 st.markdown("---")
 prev_col, prog_col, next_col = st.columns([1, 3, 1])
@@ -254,6 +268,9 @@ st.markdown("""
 }
 h1, h2, h3, h4, h5 {
     color: #ffffff !important;
+}
+.stAlert {
+    border-radius: 10px !important;
 }
 </style>
 """, unsafe_allow_html=True)
