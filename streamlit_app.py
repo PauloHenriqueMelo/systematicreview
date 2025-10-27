@@ -10,7 +10,7 @@ from datetime import datetime
 # PAGE CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
-    page_title="Minerva Reviewer — Blinded Validation",
+    page_title="Specialist Reviewer — Blinded Validation",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
