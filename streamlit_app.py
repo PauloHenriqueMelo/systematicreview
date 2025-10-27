@@ -312,3 +312,40 @@ st.markdown("""
 .block-container{padding:1.2rem 1rem 0.8rem 1rem !important;max-width:100% !important;}
 #MainMenu,footer,header{visibility:hidden;}
 </style>
+""", unsafe_allow_html=True)
+
+# -------------------------------------------------------------------
+# FINAL TOUCH: BACKGROUND COLOR FOR AI DECISION
+# -------------------------------------------------------------------
+# Optional: adjust background color dynamically (green/red/neutral)
+if ai_val in ["1", "yes"]:
+    bg_color = "#002b00"   # dark green
+elif ai_val in ["0", "no"]:
+    bg_color = "#330000"   # dark red
+else:
+    bg_color = "#0e1117"   # default dark neutral
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-color: {bg_color} !important;
+        transition: background-color 0.8s ease;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# -------------------------------------------------------------------
+# OPTIONAL: FOOTER (CREDITS OR NOTE)
+# -------------------------------------------------------------------
+st.markdown(
+    """
+    <div style='text-align: center; padding: 1rem 0; color: rgba(255,255,255,0.3); font-size: 0.75rem;'>
+        Specialist Reviewer — Blinded Validation Interface • Built with ❤️ by Paulo & Minerva
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
