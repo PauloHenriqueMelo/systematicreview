@@ -4,21 +4,20 @@
 import streamlit as st
 import pandas as pd
 import requests
-import json
 from datetime import datetime
 
 # -------------------------------------------------------------------
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # -------------------------------------------------------------------
 st.set_page_config(
-    page_title="Minerva Reviewer",
+    page_title="Minerva Reviewer (Blinded Validation)",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # -------------------------------------------------------------------
-# CONFIGURATION CONSTANTS
+# CONFIG CONSTANTS
 # -------------------------------------------------------------------
 GAS_URL = "https://script.google.com/macros/s/AKfycbwQ-XHCjJd2s6sENQJh6Z9Qm-8De9J8_UThZ-pM1rGgm04FCT-qPBSyBFaqOoSreZ1-/exec"
 GAS_TOKEN = "MINERVA_SECRET"
@@ -52,7 +51,7 @@ def fetch_sheet(only_unreviewed=False) -> pd.DataFrame:
         st.stop()
 
     df = pd.DataFrame(js["rows"])
-    for c in ["Title","Abstract","SR","Poenaru_Decision","AI","AI_Justification","Reviewer","_row"]:
+    for c in ["Title","Abstract","SR","Poenaru_Decision","AI","AI_Justification","_row"]:
         if c not in df.columns:
             df[c] = ""
 
@@ -65,7 +64,7 @@ def fetch_sheet(only_unreviewed=False) -> pd.DataFrame:
     return df.sort_values("_row").reset_index(drop=True)
 
 # -------------------------------------------------------------------
-# SAVE ROW TO SHEET
+# SAVE ROW
 # -------------------------------------------------------------------
 def save_row(sheet_row:int, fields:dict)->bool:
     try:
@@ -82,43 +81,36 @@ def save_row(sheet_row:int, fields:dict)->bool:
         return False
 
 # -------------------------------------------------------------------
-# INTERFACE: SIDEBAR SETTINGS
+# SIDEBAR CONTROLS
 # -------------------------------------------------------------------
-st.sidebar.title("⚙️ Review Controls")
+st.sidebar.title("⚙️ Controls")
 only_unreviewed = st.sidebar.checkbox("Only unreviewed", value=False)
-reviewer = st.sidebar.text_input("Reviewer Name", value=st.session_state.get("reviewer", ""))
-if reviewer:
-    st.session_state.reviewer = reviewer
-
-# Load data
 prompts_map = load_prompts()
 df = fetch_sheet(only_unreviewed)
 total = len(df)
 st.sidebar.markdown(f"**Total rows:** {total}")
 
-if total == 0:
-    st.info("✅ All abstracts reviewed!")
-    st.stop()
-
-# -------------------------------------------------------------------
-# NAVIGATION STATE
-# -------------------------------------------------------------------
 if "pos" not in st.session_state:
     st.session_state.pos = 0
 
+if total == 0:
+    st.info("🎉 All rows reviewed.")
+    st.stop()
+
 sheet_rows = df["_row"].tolist()
 current_row = df.iloc[st.session_state.pos]["_row"]
+
 jump = st.sidebar.selectbox(
     "Jump to sheet row",
     options=sheet_rows,
-    index=sheet_rows.index(current_row),
+    index=sheet_rows.index(current_row)
 )
 if jump != current_row:
     st.session_state.pos = sheet_rows.index(jump)
     st.rerun()
 
 # -------------------------------------------------------------------
-# CURRENT ABSTRACT DETAILS
+# CURRENT ROW
 # -------------------------------------------------------------------
 row = df.iloc[st.session_state.pos]
 sheet_row_num = int(row["_row"])
@@ -126,60 +118,107 @@ title = str(row["Title"])
 abstract = str(row["Abstract"])
 sr_val = int(row["SR"]) if pd.notna(row["SR"]) else 0
 sr_prompt = prompts_map.get(sr_val, "")
+decision_val = str(row["Poenaru_Decision"]).strip()
+
+ai_val = str(row["AI"]).strip().lower()
+ai_just = str(row["AI_Justification"]) if pd.notna(row["AI_Justification"]) else ""
 
 # -------------------------------------------------------------------
-# MAIN DISPLAY
+# COLOR THEME LOGIC
 # -------------------------------------------------------------------
-st.title("🧠 Minerva Reviewer")
-st.caption(f"Row {sheet_row_num} | Reviewed by: {reviewer or '—'}")
+if ai_val in ["1", "yes"]:
+    bg_color = "#002b00"  # dark green
+elif ai_val in ["0", "no"]:
+    bg_color = "#330000"  # dark red
+else:
+    bg_color = "#0e1117"  # default dark
 
-# --- Layout
-col1, col2 = st.columns([2, 1], gap="large")
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-color: {bg_color} !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-with col1:
-    st.subheader("📄 Study Information")
-    st.markdown(f"**Title:** {title or '_(empty)_'}")
+# -------------------------------------------------------------------
+# HEADER + STUDY DISPLAY
+# -------------------------------------------------------------------
+st.title("🧠 Minerva Reviewer — Blinded Validation")
+st.caption(f"Row {sheet_row_num} | Progress: {st.session_state.pos + 1}/{total}")
+
+col_main, col_side = st.columns([2.5, 1])
+
+with col_main:
+    st.markdown(f"### 📄 Title")
+    st.markdown(f"**{title or '_(empty)_'}**")
 
     with st.expander("Abstract", expanded=True):
-        st.write(abstract or "_(empty)_")
+        st.markdown(abstract or "_(empty)_", unsafe_allow_html=True)
 
     with st.expander(f"SR Prompt (SR={sr_val})", expanded=False):
         st.info(sr_prompt or "_(no prompt found in prompts.csv)_")
 
-with col2:
-    st.subheader("🧩 Review Inputs")
-
-    dec_opts = ["", "Include", "Exclude", "Unclear"]
-    decision = st.selectbox("Decision", dec_opts, index=dec_opts.index(str(row["Poenaru_Decision"]).strip()) if str(row["Poenaru_Decision"]).strip() in dec_opts else 0)
-
-    ai_opts = ["", "yes", "no"]
-    ai_flag = st.selectbox("Use AI?", ai_opts, index=ai_opts.index(str(row["AI"]).strip().lower()) if str(row["AI"]).strip().lower() in ai_opts else 0)
-
-    ai_just = st.text_area(
-        "AI Justification",
-        value=str(row["AI_Justification"]) if pd.notna(row["AI_Justification"]) else "",
-        height=150
+# -------------------------------------------------------------------
+# REVIEW PANEL
+# -------------------------------------------------------------------
+with col_side:
+    st.markdown("### 🧩 Your Decision")
+    dec_opts = ["", "Yes", "No"]
+    decision = st.selectbox(
+        "Does this study meet inclusion criteria?",
+        dec_opts,
+        index=dec_opts.index(decision_val) if decision_val in dec_opts else 0
     )
 
-    st.markdown("---")
-    save_btn = st.button("💾 Save Review", type="primary", use_container_width=True)
-    if save_btn:
-        payload = {
-            "Poenaru_Decision": decision,
-            "AI": ai_flag,
-            "AI_Justification": ai_just,
-            "Reviewer": reviewer,
-            "Reviewed_At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        ok = save_row(sheet_row_num, payload)
-        if ok:
-            st.success(f"✅ Row {sheet_row_num} saved successfully.")
-            fetch_sheet.clear()
+    save_col = st.container()
+    with save_col:
+        if st.button("💾 Save Decision", type="primary", use_container_width=True):
+            if not decision:
+                st.warning("Please select Yes or No.")
+            else:
+                payload = {
+                    "Poenaru_Decision": decision,
+                    "Reviewed_At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                ok = save_row(sheet_row_num, payload)
+                if ok:
+                    st.success(f"✅ Saved decision for Row {sheet_row_num}")
+                    fetch_sheet.clear()
+                    st.rerun()
+                else:
+                    st.error("❌ Save failed")
+
+    # Reveal AI info *after saving*
+    if decision_val in ["Yes", "No"]:
+        st.markdown("---")
+        st.markdown("### 🤖 AI Decision (Unblinded)")
+        if ai_val in ["1", "yes"]:
+            st.success("AI decision: **YES (Include)**")
+        elif ai_val in ["0", "no"]:
+            st.error("AI decision: **NO (Exclude)**")
         else:
-            st.error("❌ Failed to save row. Please try again.")
+            st.info("AI decision unavailable.")
+
+        if ai_just.strip():
+            st.markdown(f"**Justification:**\n\n{ai_just}")
+
+        # Agreement indicator
+        if ai_val in ["1", "yes", "0", "no"]:
+            match = (
+                (decision_val == "Yes" and ai_val in ["1", "yes"])
+                or (decision_val == "No" and ai_val in ["0", "no"])
+            )
+            if match:
+                st.success("✅ You and AI agreed!")
+            else:
+                st.error("❌ You and AI disagreed.")
 
 # -------------------------------------------------------------------
-# NAVIGATION BUTTONS
+# NAVIGATION + PROGRESS
 # -------------------------------------------------------------------
 st.markdown("---")
 prev_col, prog_col, next_col = st.columns([1, 3, 1])
@@ -191,7 +230,7 @@ with prev_col:
 
 with prog_col:
     st.progress((st.session_state.pos + 1) / total)
-    st.caption(f"Record {st.session_state.pos + 1} of {total}")
+    st.caption(f"Review {st.session_state.pos + 1} of {total}")
 
 with next_col:
     if st.button("Next ➡️") and st.session_state.pos < total - 1:
@@ -199,25 +238,22 @@ with next_col:
         st.rerun()
 
 # -------------------------------------------------------------------
-# EXTRA FEATURES
+# STYLING
 # -------------------------------------------------------------------
-with st.sidebar.expander("📊 Export Options"):
-    if st.button("Download current table as CSV"):
-        st.download_button(
-            label="📥 Export CSV",
-            data=df.to_csv(index=False).encode("utf-8"),
-            file_name="minerva_reviews.csv",
-            mime="text/csv"
-        )
-
 st.markdown("""
 <style>
 .stButton>button {
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     font-weight: 600;
 }
 [data-testid="stSidebar"] {
-    background-color: #f7f9fc;
+    background-color: #10161f;
+}
+.stSelectbox, .stTextArea {
+    margin-bottom: .5rem;
+}
+h1, h2, h3, h4, h5 {
+    color: #ffffff !important;
 }
 </style>
 """, unsafe_allow_html=True)
