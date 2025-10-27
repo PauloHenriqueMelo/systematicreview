@@ -210,7 +210,7 @@ st.markdown(
                    -webkit-background-clip: text;
                    -webkit-text-fill-color: transparent;
                    background-clip: text;'>
-            Minerva Reviewer
+            Specialist Reviewer
         </h1>
         <div style='font-size: 1.1rem; color: rgba(255,255,255,0.5); font-weight: 500; margin-top: 0.5rem;'>
             Blinded Validation Protocol
