@@ -35,18 +35,39 @@ SR_TITLES = {
 # -------------------------------------------------------------------
 # LOAD PROMPTS
 # -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# LOAD PROMPTS  (robust against BOM/whitespace/duplicates)
+# -------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def load_prompts() -> dict:
     try:
-        p = pd.read_csv(PROMPTS_FILE)
+        # utf-8-sig handles BOM; dialect sniff kept as fallback
+        p = pd.read_csv(PROMPTS_FILE, encoding="utf-8-sig")
     except Exception:
-        p = pd.read_csv(PROMPTS_FILE, sep=None, engine="python")
+        p = pd.read_csv(PROMPTS_FILE, sep=None, engine="python", encoding="utf-8-sig")
+
+    # Normalize headers (strip + remove BOM if present)
+    p.columns = [str(c).replace("\ufeff", "").strip() for c in p.columns]
+
     req = {"SR", "Prompt"}
-    if not req.issubset(p.columns):
+    if not req.issubset(set(p.columns)):
         st.error("⚠️ prompts.csv must have columns: SR, Prompt")
         st.stop()
-    p["SR"] = pd.to_numeric(p["SR"], errors="coerce").fillna(0).astype(int)
-    return {int(r.SR): str(r.Prompt) for r in p.itertuples(index=False)}
+
+    # Normalize SR and Prompt cells
+    p["SR"] = pd.to_numeric(p["SR"], errors="coerce")
+    p = p.dropna(subset=["SR"])
+    p["SR"] = p["SR"].astype(int)
+    p["Prompt"] = p["Prompt"].astype(str).str.strip()
+
+    # If there are duplicate SR rows, keep the last non-empty prompt
+    # (keeps your authoring order; later rows override earlier ones)
+    p = (p.sort_index()
+          .groupby("SR", as_index=False)["Prompt"]
+          .apply(lambda s: next((x for x in reversed(s.tolist()) if str(x).strip()), "")))
+
+    # Build the lookup {SR: Prompt}
+    return {int(row.SR): str(row.Prompt) for row in p.itertuples(index=False)}
 
 # -------------------------------------------------------------------
 # FETCH SHEET
