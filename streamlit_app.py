@@ -25,8 +25,8 @@ PROMPTS_FILE = "prompts.csv"
 
 # SR → TITLE MAP
 SR_TITLES = {
-    1: "Eve Pathology",
-    2: "Carmel EHR",
+    1: "Carmel EHR",
+    2: "Eve Pathology",
     3: "Lauren Imaging",
     4: "Alex Surgical AI",
     5: "Paulo Registry"
