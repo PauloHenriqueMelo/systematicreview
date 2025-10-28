@@ -23,7 +23,7 @@ When in doubt, INCLUDE IT (decision = 1)."
 2,"1. Study Scope
 
 Include if:
-- Include if the study develops, uses, or validates an artificial intelligence (AI) model (e.g., machine learning, deep learning, computer vision) for diagnosis, treatment, or clinical outcome prediction of pediatric surgical pathology diseases.
+- Include if the study develops, uses, or validates an artificial intelligence (AI) model (e.g., large language models, machine learning, deep learning, computer vision) for diagnosis, treatment, or clinical outcome prediction of pediatric surgical pathology diseases.
 - Include if the AI is applied to histopathology or tissue-based diagnosis/prediction/treatment, such as histology, biopsy slides, specimen images, or molecular pathology.
 - Include if the study type is an original study, prospective study, retrospective study, longitudinal study, cross-sectional study, systematic review, narrative review, or grey literature.
 
@@ -59,3 +59,4 @@ Exclude if:
 - Exclude if the AI is not actually trained, tested, or validated (i.e., descriptive or conceptual papers only).
 
 When in doubt, INCLUDE IT (decision = 1)."
+
