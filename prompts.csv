@@ -1,3 +1,61 @@
 SR,Prompt
-1,"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-2,"Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corp"
+1,"1. Study Scope
+
+Include if:
+- Include if the study used data sourced from an Electronic Health Record (EHR) system or data clearly relevant or useful for EHR-based research.
+- Include if data included structured elements (e.g., laboratory results, patient demographics, vital signs) and/or unstructured elements (e.g., clinical notes, discharge summaries, operative notes).
+- Include if the data related to surgical care (preoperative, intraoperative, or postoperative) and/or pediatric care (patients under 18 years).
+- Include if a Large Language Model (LLM), either commercial or open-source, was applied to the EHR data, either alone or in combination with other methods.
+- Eligible models include transformer-based LLMs such as BERT, LLaMA, and the GPT series.
+- Include if the study included comparisons to other LLMs, to traditional methods (manual chart review, rule-based models, classical machine learning or deep learning techniques), or to technological benchmarks.
+- Include if the study reported adequate performance metrics, even without explicit comparators.
+- Include if the study was a primary research article.
+- Include if the study type is an original study, prospective study, retrospective study, longitudinal study, cross-sectional study, systematic review, narrative review, or grey literature.
+
+Exclude if:
+- Exclude if the dataset was unrelated to pediatric or surgical care.
+- Exclude only if the data were neither sourced from an EHR nor demonstrably relevant or useful for EHR-based research.
+- Exclude if the study did not involve an LLM.
+- Exclude if the study is unrelated to clinical or patient care.
+
+When in doubt, INCLUDE IT (decision = 1)."
+
+2,"1. Study Scope
+
+Include if:
+- Include if the study develops, uses, or validates an artificial intelligence (AI) model (e.g., machine learning, deep learning, computer vision) for diagnosis, treatment, or clinical outcome prediction of pediatric surgical pathology diseases.
+- Include if the AI is applied to histopathology or tissue-based diagnosis/prediction/treatment, such as histology, biopsy slides, specimen images, or molecular pathology.
+- Include if the study type is an original study, prospective study, retrospective study, longitudinal study, cross-sectional study, systematic review, narrative review, or grey literature.
+
+Exclude if:
+- Exclude if the study does not use AI.
+- Exclude if the AI application is exclusively in radiology, imaging, endoscopy, ultrasound, CT, or MRI, meaning it does not involve pathology or tissue-based data.
+- Exclude if the study concerns speech and language pathology or speech/language disorders.
+- Exclude if the study focuses on chatbots, virtual or augmented reality, educational tools, or administrative workflow models that are unrelated to pathology.
+
+------------------------------------------------------------
+2. Population
+
+Include if:
+  - Include if the population is pediatric and involves pediatric surgical diseases that require pathology, such as:
+  - Include congenital anomalies (e.g., Hirschsprung’s disease).
+  - Include pediatric solid tumors (e.g., Wilms tumor, neuroblastoma).
+  - Include pediatric surgical specimens (biopsies, resections, etc.).
+  - Include if the study involves fetal or neonatal populations when related to pediatric surgical pathology.
+  - Include if whether it is adult or pediatric population is not explicitly stated, but the disease is primarily known to be pediatric surgical (e.g., Hirschsprung’s disease, necrotizing enterocolitis, congenital diaphragmatic hernia).
+
+Exclude if:
+- Exclude if the population is only adult.
+- Exclude if the disease is clearly non-surgical or  (e.g., asthma, diabetes) or non-pathological (e.g., psychiatric disorders)
+------------------------------------------------------------
+3. Intervention / Exposure
+
+Include if:
+- Include if AI methods such as machine learning, deep learning, neural networks, computer vision, or predictive modeling are applied to pathology data.
+- Include if data sources include histopathology slides, biopsy specimens, or pathology reports.
+
+Exclude if:
+- Exclude if AI is only used for radiological or imaging analyses, such as MRI segmentation or CT detection.
+- Exclude if the AI is not actually trained, tested, or validated (i.e., descriptive or conceptual papers only).
+
+When in doubt, INCLUDE IT (decision = 1)."
